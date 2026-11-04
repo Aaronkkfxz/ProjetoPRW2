@@ -1,0 +1,23 @@
+# Dependências Node.js 
+node_modules/
+
+# Variáveis de Ambiente e Credenciais Sensíveis
+.env
+.env.*
+!.env.example
+
+# Pastas de Build (Next.js e NestJS)
+.next/
+out/
+dist/
+
+# Configurações Locais de IDEs e Agentes de IA
+.vscode/
+.cursor/
+.devin/
+.windsurf/
+.agents/
+.claude/
+
+# Logs de Erros e Testes
+*.log

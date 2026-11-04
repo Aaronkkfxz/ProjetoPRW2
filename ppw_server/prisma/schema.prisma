@@ -1,0 +1,41 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Prioridade {
+  BAIXA
+  MEDIA
+  ALTA
+}
+
+// Atualizamos os status para o fluxo da oficina
+enum Status {
+  ABERTURA_DIAGNOSTICO
+  APROVACAO_ORCAMENTO
+  EXECUCAO_TRABALHO
+  ENTREGA_CARRO
+}
+
+model Ticket {
+  id                  String     @id @default(uuid())
+
+  // Campos da Oficina Mecânica
+  cliente             String
+  veiculo             String
+  problemaRelatado    String
+  diagnosticoMecanico String?
+  itensOrcamento      Json?
+
+  prioridade          Prioridade @default(BAIXA)
+  status              Status     @default(ABERTURA_DIAGNOSTICO)
+
+  createdAt           DateTime   @default(now())   @map("created_at")
+  updatedAt           DateTime?  @updatedAt        @map("updated_at")
+  deletedAt           DateTime?  @map("deleted_at")
+
+  @@map("tickets")
+}
