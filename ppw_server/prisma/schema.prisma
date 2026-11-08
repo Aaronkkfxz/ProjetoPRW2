@@ -20,10 +20,8 @@ enum Status {
   ENTREGA_CARRO
 }
 
-model Ticket {
+model OrdemServico {
   id                  String     @id @default(uuid())
-
-  // Campos da Oficina Mecânica
   cliente             String
   veiculo             String
   problemaRelatado    String
@@ -33,9 +31,27 @@ model Ticket {
   prioridade          Prioridade @default(BAIXA)
   status              Status     @default(ABERTURA_DIAGNOSTICO)
 
-  createdAt           DateTime   @default(now())   @map("created_at")
-  updatedAt           DateTime?  @updatedAt        @map("updated_at")
+  createdAt           DateTime   @default(now()) @map("created_at")
+  updatedAt           DateTime?  @updatedAt @map("updated_at")
   deletedAt           DateTime?  @map("deleted_at")
 
-  @@map("tickets")
+  // Relação com a trilha de auditoria
+  historico           HistoricoOS[]
+
+  @@map("ordens_servico")
+}
+
+// Tabela obrigatória para a avaliação (Rastreabilidade e Trilha de Auditoria)
+model HistoricoOS {
+  id              String       @id @default(uuid())
+  id_registro     String
+  estado_anterior Status
+  novo_estado     Status
+  autor_id        String       // ID do mecânico ou rececionista
+  justificativa   String?
+  timestamp       DateTime     @default(now())
+
+  ordemServico    OrdemServico @relation(fields: [id_registro], references: [id])
+
+  @@map("historico_os")
 }

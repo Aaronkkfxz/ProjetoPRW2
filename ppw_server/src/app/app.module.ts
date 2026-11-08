@@ -1,9 +1,9 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { PrismaModule } from '../database/prisma.module';
-import { TicketModule } from '../module/tickets/tickets.module';
+import { OrdemServicoModule } from '../module/ordem-servico/ordem-servico.module';
 
-const modules = [PrismaModule, TicketModule];
+const modules = [PrismaModule, OrdemServicoModule];
 
 @Module({
   imports: [

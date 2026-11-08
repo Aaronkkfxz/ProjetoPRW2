@@ -10,7 +10,7 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
       connectionString: process.env.DATABASE_URL,
     });
 
-    const adapter = new PrismaPg(pool, { schema: 'cocao' });
+    const adapter = new PrismaPg(pool, { schema: 'bi304128x' });
 
     super({ adapter });
   }
