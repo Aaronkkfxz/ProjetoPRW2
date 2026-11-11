@@ -26,7 +26,11 @@ import { ORDEM_SERVICO_WRITE_REPOSITORY } from './domain/ports/ordem-servico.wri
 import { OrdemServicoPrismaReadRepository } from './infrastructure/adapters/ordem-servico.prisma.read.repository';
 import { OrdemServicoPrismaWriteRepository } from './infrastructure/adapters/ordem-servico.prisma.write.repository';
 
+import { FaturarOrdemServicoService } from './application/service/write/faturar.ordem-servico.service';
+import { FaturarOrdemServicoController } from './presentation/faturar.ordem-servico.controller';
+
 const ordemServicoControllers = [
+  FaturarOrdemServicoController,
   CreateOrdemServicoController,
   FindAllOrdemServicoController,
   UpdateOrdemServicoController,
@@ -51,6 +55,8 @@ const ordemServicoProviders = [
     provide: FIND_ALL_ORDEM_SERVICO_USE_CASE,
     useClass: FindAllOrdemServicoService,
   },
+
+  FaturarOrdemServicoService,
 
   // Injeção dos Repositórios de Banco de Dados
   {

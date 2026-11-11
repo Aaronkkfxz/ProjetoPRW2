@@ -11,4 +11,6 @@ export interface OrdemServicoWriteRepository {
   updateOrdemServicoStatus(id: string, status: Status): Promise<void>;
 
   deleteOrdemServico(id: string): Promise<void>;
+
+  alocarPecaEFaturar(osId: string, pecaId: string, quantidadeUsada: number, autorId: string): Promise<void>;
 }

@@ -55,3 +55,11 @@ model HistoricoOS {
 
   @@map("historico_os")
 }
+model PecaEstoque {
+  id         String   @id @default(uuid())
+  nome       String
+  quantidade Int      @default(0)
+  preco      Float
+
+  @@map("pecas_estoque")
+}

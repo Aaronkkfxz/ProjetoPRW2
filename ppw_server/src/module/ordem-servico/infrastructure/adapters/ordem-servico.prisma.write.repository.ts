@@ -46,4 +46,45 @@ export class OrdemServicoPrismaWriteRepository implements OrdemServicoWriteRepos
       where: { id },
     });
   }
+  async alocarPecaEFaturar(osId: string, pecaId: string, quantidadeUsada: number, autorId: string): Promise<void> {
+    try {
+      // O $transaction garante que ou TUDO funciona, ou NADA é salvo (ACID)
+      await this.prisma.$transaction(async (tx) => {
+        // 1. Baixa Atômica no Estoque (Evita Race Condition)
+        const pecaAtualizada = await tx.pecaEstoque.update({
+          where: { id: pecaId },
+          data: {
+            quantidade: {
+              decrement: quantidadeUsada,
+            },
+          },
+        });
+
+        // 2. Validação Restrita pós-baixa (Rollback se furar estoque)
+        if (pecaAtualizada.quantidade < 0) {
+          throw new Error('Estoque insuficiente para alocar esta peça.');
+        }
+
+        // 3. Atualiza o Status da OS para CONCLUIDO
+        await tx.ordemServico.update({
+          where: { id: osId },
+          data: { status: 'CONCLUIDO' as any }, // O 'as any' resolve o conflito de tipagem
+        });
+
+        // 4. Trilha de Auditoria Obrigatória (Audit Log)
+        await tx.historicoOS.create({
+          data: {
+            id_registro: osId,
+            estado_anterior: 'EXECUCAO_TRABALHO',
+            novo_estado: 'CONCLUIDO' as any,
+            autor_id: autorId,
+            justificativa: `Baixa atômica de ${quantidadeUsada}x ${pecaAtualizada.nome} aplicada ao estoque.`,
+          },
+        });
+      });
+    } catch (error) {
+      // 'error as Error' avisa o TypeScript que é seguro ler o .message
+      throw new Error(`Falha na transação atômica: ${(error as Error).message}`);
+    }
+  }
 }
