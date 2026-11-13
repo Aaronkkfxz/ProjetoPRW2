@@ -2,14 +2,16 @@
 
 import { Alert } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { ColumnDef, flexRender, getCoreRowModel, getFilteredRowModel, useReactTable } from '@tanstack/react-table';
 import { useMemo, useState } from 'react';
 
-// 1. Importações atualizadas para a Ordem de Serviço
 import { OrdemServico } from '../type/ordem-servico.type';
 import { getOrdemServicoColumns } from './ordem-servico-columns';
 import { OrdemServicoCreateDialog } from './OrdemServicoCreateDialog';
+import { OrdemServicoCard } from '@/components/cards/OrdemServicoCard';
+// O seu Card da Máquina de Estados
 
 export interface OrdemServicoProps {
   ordensServico: OrdemServico[];
@@ -19,32 +21,38 @@ export default function OrdensServicoPage({ ordensServico }: OrdemServicoProps) 
   const [globalFilter, setGlobalFilter] = useState('');
   const [isFormOpen, setIsFormOpen] = useState(false);
 
+  // Estados para controlar o painel de edição do lápis
+  const [isEditOpen, setIsEditOpen] = useState(false);
+  const [osSelecionada, setOsSelecionada] = useState<OrdemServico | null>(null);
+
   const handleOpenCreate = () => {
     setIsFormOpen(true);
   };
 
-  const handleOpenUpdate = () => {};
-  const handleOpenDelete = () => {};
+  // Agora o botão do lápis injeta a O.S. e abre o modal
+  const handleOpenUpdate = (os: OrdemServico) => {
+    setOsSelecionada(os);
+    setIsEditOpen(true);
+  };
 
-  // 2. Colunas atualizadas
+  const handleOpenDelete = (id?: string) => {
+    console.log('Deletar OS:', id);
+  };
+
   const columns = useMemo<ColumnDef<OrdemServico>[]>(
     () => getOrdemServicoColumns({ onEdit: handleOpenUpdate, onDelete: handleOpenDelete }),
-    [handleOpenUpdate, handleOpenDelete],
+    [],
   );
 
   const table = useReactTable({
     data: ordensServico ?? [],
     columns,
-    state: {
-      globalFilter,
-    },
+    state: { globalFilter },
     onGlobalFilterChange: setGlobalFilter,
     getCoreRowModel: getCoreRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
     initialState: {
-      pagination: {
-        pageSize: 5,
-      },
+      pagination: { pageSize: 5 },
     },
   });
 
@@ -53,7 +61,6 @@ export default function OrdensServicoPage({ ordensServico }: OrdemServicoProps) 
       className="space-y-6"
       style={{ backgroundColor: '#0F1418', color: '#F5F7F8', minHeight: '100vh', padding: '2rem' }}
     >
-      {/* Título da Oficina */}
       <div>
         <h1 className="text-3xl font-extrabold tracking-tight" style={{ color: '#18A9E0' }}>
           Ordens de Serviço
@@ -75,7 +82,6 @@ export default function OrdensServicoPage({ ordensServico }: OrdemServicoProps) 
         </Button>
       </div>
 
-      {/* Tabela de O.S. (Fundo Chumbo e bordas Cinza Escuro) */}
       <div
         className="border rounded-xl w-full overflow-x-auto shadow-lg"
         style={{ borderColor: '#29343B', backgroundColor: '#182127' }}
@@ -116,8 +122,25 @@ export default function OrdensServicoPage({ ordensServico }: OrdemServicoProps) 
         </Table>
       </div>
 
-      {/* 3. Componente do Modal de Criação Renomeado */}
       <OrdemServicoCreateDialog isOpen={isFormOpen} onOpenChange={setIsFormOpen} />
+
+      {/* O Modal Oculto que o lápis vai disparar */}
+      <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
+        <DialogContent className="max-w-[700px] p-0 border-none bg-transparent shadow-none">
+          <DialogTitle className="hidden">Editar Ordem de Serviço</DialogTitle>
+          {osSelecionada && (
+            <OrdemServicoCard
+              os={osSelecionada}
+              onUpdate={(id, updateData) => {
+                window.location.reload();
+              }}
+              onDelete={(id) => {
+                console.log('Deletar OS:', id);
+              }}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

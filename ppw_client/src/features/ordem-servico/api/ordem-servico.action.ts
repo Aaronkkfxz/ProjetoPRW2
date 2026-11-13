@@ -57,3 +57,24 @@ export async function createOrdemServico(
     };
   }
 }
+export async function faturarOrdemServicoAction(osId: string, pecaId: string, quantidadeUsada: number) {
+  const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+
+  try {
+    const response = await fetch(`${API_URL}/ordem-servico/${osId}/faturar`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ pecaId, quantidadeUsada }),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => null);
+      return { success: false, message: errorData?.message || 'Erro ao faturar a OS.' };
+    }
+
+    revalidatePath('/');
+    return { success: true, message: 'Transação ACID concluída: Estoque baixado e OS faturada.' };
+  } catch (error) {
+    return { success: false, message: 'Erro de comunicação com o servidor.' };
+  }
+}

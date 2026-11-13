@@ -1,9 +1,10 @@
+import { OrdemServico } from '@/features/ordem-servico/type/ordem-servico.type';
 import { useState } from 'react';
+import { faturarOrdemServicoAction } from '../../features/ordem-servico/api/ordem-servico.action';
 import { Badge } from '../ui/badge';
 import { Button } from '../ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Input } from '../ui/input';
-import { OrdemServico } from '@/features/ordem-servico/type/ordem-servico.type';
 
 interface OrdemServicoCardProps {
   os: OrdemServico;
@@ -43,17 +44,27 @@ export function OrdemServicoCard({ os, onUpdate, onDelete }: OrdemServicoCardPro
     setItens(itens.filter((_, i) => i !== index));
   };
 
-  const handleAvancarEtapa = () => {
-    const updateData: any = { status: nextStatus };
+  const handleAvancarEtapa = async () => {
+    // 1. Transition Guard: O "Boss Final" (Faturamento e Baixa Atômica)
+    if (os.status === 'EXECUCAO_TRABALHO' && nextStatus === 'CONCLUIDO') {
+      const res = await faturarOrdemServicoAction(os.id, '1', 1); // ID e Qtd hardcoded para teste
+      if (res.success) {
+        console.log(res.message);
+        window.location.reload();
+      } else {
+        console.error('FALHA NA TRANSAÇÃO ACID: ', res.message);
+      }
+      return;
+    }
 
-    // Regras de negócio acopladas aos estágios específicos da OS
+    // 2. Fluxo Normal
+    const updateData: any = { status: nextStatus };
     if (os.status === 'ABERTURA_DIAGNOSTICO') {
       updateData.diagnosticoMecanico = diagnostico;
     }
     if (os.status === 'AGUARDANDO_APROVACAO') {
       updateData.itensOrcamento = itens;
     }
-
     onUpdate(os.id, updateData);
   };
 

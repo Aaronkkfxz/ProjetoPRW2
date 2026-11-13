@@ -15,9 +15,11 @@ enum Prioridade {
 // Atualizamos os status para o fluxo da oficina
 enum Status {
   ABERTURA_DIAGNOSTICO
-  APROVACAO_ORCAMENTO
+  AGUARDANDO_APROVACAO
+  AGUARDANDO_PECAS
   EXECUCAO_TRABALHO
-  ENTREGA_CARRO
+  CONCLUIDO
+  ENTREGUE
 }
 
 model OrdemServico {
