@@ -1,3 +1,12 @@
+export interface HistoricoOS {
+  id: string;
+  estado_anterior: string;
+  novo_estado: string;
+  autor_id: string;
+  justificativa?: string;
+  timestamp: string | Date;
+}
+
 export interface OrdemServico {
   id: string;
   cliente: string;
@@ -6,7 +15,6 @@ export interface OrdemServico {
   diagnosticoMecanico?: string | null;
   itensOrcamento?: { descricao: string; valor: number }[] | null;
   prioridade: 'BAIXA' | 'MEDIA' | 'ALTA' | string;
-  // O status foi atualizado para bater exatamente com a nossa Máquina de Estados no backend
   status:
     | 'ABERTURA_DIAGNOSTICO'
     | 'AGUARDANDO_APROVACAO'
@@ -18,6 +26,7 @@ export interface OrdemServico {
   createdAt?: string | Date;
   updatedAt?: string | Date;
   deletedAt?: string | Date | null;
+  historico?: HistoricoOS[];
 }
 
 export interface OrdemServicoFormDialogProps {

@@ -11,6 +11,8 @@ export type OrdemServicoProps = {
   itensOrcamento?: { descricao: string; valor: number }[] | null;
   prioridade: Prioridade;
   status: Status;
+  // 1. Adicionamos o histórico aqui para ele não ser descartado
+  historico?: any[];
 } & DefaulTimeStampsProps;
 
 export class OrdemServicoEntity extends BaseEntity<OrdemServicoProps> {
@@ -46,6 +48,8 @@ export class OrdemServicoEntity extends BaseEntity<OrdemServicoProps> {
     status: string,
     diagnosticoMecanico?: string | null,
     itensOrcamento?: any,
+    // 2. O método de restauração agora aceita o histórico
+    historico?: any[],
   ): OrdemServicoEntity {
     return new OrdemServicoEntity({
       id,
@@ -56,6 +60,7 @@ export class OrdemServicoEntity extends BaseEntity<OrdemServicoProps> {
       itensOrcamento,
       prioridade: Prioridade.create(prioridade),
       status: Status.create(status),
+      historico,
     });
   }
 }

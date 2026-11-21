@@ -1,17 +1,17 @@
 'use client';
 
-import { Alert } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { ColumnDef, flexRender, getCoreRowModel, getFilteredRowModel, useReactTable } from '@tanstack/react-table';
 import { useMemo, useState } from 'react';
 
+import { updateOrdemServicoAction } from '../api/ordem-servico.action';
 import { OrdemServico } from '../type/ordem-servico.type';
 import { getOrdemServicoColumns } from './ordem-servico-columns';
+
 import { OrdemServicoCreateDialog } from './OrdemServicoCreateDialog';
 import { OrdemServicoCard } from '@/components/cards/OrdemServicoCard';
-// O seu Card da Máquina de Estados
 
 export interface OrdemServicoProps {
   ordensServico: OrdemServico[];
@@ -21,7 +21,6 @@ export default function OrdensServicoPage({ ordensServico }: OrdemServicoProps) 
   const [globalFilter, setGlobalFilter] = useState('');
   const [isFormOpen, setIsFormOpen] = useState(false);
 
-  // Estados para controlar o painel de edição do lápis
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [osSelecionada, setOsSelecionada] = useState<OrdemServico | null>(null);
 
@@ -29,7 +28,6 @@ export default function OrdensServicoPage({ ordensServico }: OrdemServicoProps) 
     setIsFormOpen(true);
   };
 
-  // Agora o botão do lápis injeta a O.S. e abre o modal
   const handleOpenUpdate = (os: OrdemServico) => {
     setOsSelecionada(os);
     setIsEditOpen(true);
@@ -66,10 +64,6 @@ export default function OrdensServicoPage({ ordensServico }: OrdemServicoProps) 
           Ordens de Serviço
         </h1>
         <p style={{ color: '#A7B0B7' }}>Gestão de veículos na oficina</p>
-      </div>
-
-      <div className="">
-        <Alert style={{ backgroundColor: '#182127', borderColor: '#29343B', color: '#F5F7F8' }}></Alert>
       </div>
 
       <div className="flex justify-between items-center">
@@ -124,15 +118,19 @@ export default function OrdensServicoPage({ ordensServico }: OrdemServicoProps) 
 
       <OrdemServicoCreateDialog isOpen={isFormOpen} onOpenChange={setIsFormOpen} />
 
-      {/* O Modal Oculto que o lápis vai disparar */}
       <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
         <DialogContent className="max-w-[700px] p-0 border-none bg-transparent shadow-none">
           <DialogTitle className="hidden">Editar Ordem de Serviço</DialogTitle>
           {osSelecionada && (
             <OrdemServicoCard
               os={osSelecionada}
-              onUpdate={(id, updateData) => {
-                window.location.reload();
+              onUpdate={async (id, updateData) => {
+                const res = await updateOrdemServicoAction(id, updateData);
+                if (res.success) {
+                  window.location.reload();
+                } else {
+                  alert('FALHA NA TRANSIÇÃO: ' + res.message);
+                }
               }}
               onDelete={(id) => {
                 console.log('Deletar OS:', id);

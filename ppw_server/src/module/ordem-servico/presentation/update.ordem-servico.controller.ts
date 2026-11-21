@@ -12,8 +12,12 @@ export class UpdateOrdemServicoController {
     private readonly updateOrdemServicoUseCase: UpdateOrdemServicoUseCase,
   ) {}
 
+  // Define que a rota precisa obrigatoriamente de um ID
   @Patch(':id')
-  async updateOrdemServico(@Param('id') id: string, @Body() updateData: any): Promise<OrdemServicoResponse> {
+  async updateOrdemServico(
+    @Param('id') id: string,
+    @Body() updateData: any, // O payload vem do frontend
+  ): Promise<OrdemServicoResponse> {
     return await this.updateOrdemServicoUseCase.execute(id, updateData);
   }
 }

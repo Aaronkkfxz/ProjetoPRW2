@@ -4,16 +4,16 @@ import { revalidatePath } from 'next/cache';
 import { OrdemServicoFormData, ordemServicoSchema } from '../schema/ordem-servico.schema';
 import { ActionState, OrdemServico } from '../type/ordem-servico.type';
 
-// Ajuste a porta se o seu NestJS estiver a rodar numa porta diferente
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
+// 1. CORREÇÃO DA CRIAÇÃO: Extrai os dados corretamente do FormData nativo
 export async function createOrdemServico(
   prevState: ActionState<OrdemServico>,
-  data: OrdemServicoFormData,
+  data: OrdemServicoFormData | FormData,
 ): Promise<ActionState<OrdemServico>> {
   try {
-    // 1. Validação de segurança no servidor (Server-side validation)
-    const validatedData = ordemServicoSchema.safeParse(data);
+    const rawData = data instanceof FormData ? Object.fromEntries(data) : data;
+    const validatedData = ordemServicoSchema.safeParse(rawData);
 
     if (!validatedData.success) {
       return {
@@ -23,43 +23,49 @@ export async function createOrdemServico(
       };
     }
 
-    // 2. Chamada para a nova rota do backend NestJS
     const response = await fetch(`${API_URL}/ordem-servico`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(validatedData.data),
     });
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => null);
-      return {
-        success: false,
-        message: errorData?.message || 'Erro ao criar a Ordem de Serviço no servidor.',
-      };
+      return { success: false, message: errorData?.message || 'Erro ao criar a O.S.' };
     }
 
-    const responseData = await response.json();
-
-    // 3. Revalida a página atual para a tabela atualizar automaticamente com a nova O.S.
     revalidatePath('/');
     revalidatePath('/ordem-servico');
-    return {
-      success: true,
-      message: 'Ordem de Serviço criada com sucesso!',
-      data: responseData,
-    };
+    return { success: true, message: 'Ordem de Serviço criada com sucesso!' };
   } catch (error) {
-    return {
-      success: false,
-      message: 'Erro de comunicação com o servidor. Verifique se o backend está a rodar.',
-    };
+    return { success: false, message: 'Erro de comunicação com o servidor.' };
   }
 }
+
+// 2. CORREÇÃO DO MODAL: A URL da requisição agora recebe o ID corretamente
+export async function updateOrdemServicoAction(id: string, updateData: any) {
+  const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+  try {
+    const response = await fetch(`${API_URL}/ordem-servico/${id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(updateData),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => null);
+      return { success: false, message: errorData?.message || 'Erro ao avançar etapa.' };
+    }
+
+    revalidatePath('/');
+    return { success: true, message: 'Status atualizado com sucesso!' };
+  } catch (error) {
+    return { success: false, message: 'Erro na requisição de atualização.' };
+  }
+}
+
 export async function faturarOrdemServicoAction(osId: string, pecaId: string, quantidadeUsada: number) {
   const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
-
   try {
     const response = await fetch(`${API_URL}/ordem-servico/${osId}/faturar`, {
       method: 'POST',
@@ -68,13 +74,11 @@ export async function faturarOrdemServicoAction(osId: string, pecaId: string, qu
     });
 
     if (!response.ok) {
-      const errorData = await response.json().catch(() => null);
-      return { success: false, message: errorData?.message || 'Erro ao faturar a OS.' };
+      return { success: false, message: 'Erro ao faturar.' };
     }
-
     revalidatePath('/');
-    return { success: true, message: 'Transação ACID concluída: Estoque baixado e OS faturada.' };
+    return { success: true, message: 'Transação ACID concluída!' };
   } catch (error) {
-    return { success: false, message: 'Erro de comunicação com o servidor.' };
+    return { success: false, message: 'Erro de comunicação.' };
   }
 }

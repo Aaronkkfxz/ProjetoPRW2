@@ -14,6 +14,7 @@ export class OrdemServicoResponse {
   createdAt?: Date | null;
   updateAt?: Date | null;
   deletedAt?: Date | null;
+  historico?: any[];
 
   constructor(props: Partial<OrdemServicoProps>) {
     Object.assign(this, props);

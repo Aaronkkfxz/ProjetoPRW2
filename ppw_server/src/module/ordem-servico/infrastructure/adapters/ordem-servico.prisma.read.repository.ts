@@ -9,19 +9,27 @@ export class OrdemServicoPrismaReadRepository implements OrdemServicoReadReposit
   constructor(private readonly prisma: PrismaService) {}
 
   async findOrdemServicoAll(): Promise<OrdemServicoEntity[]> {
-    // Altera de this.prisma.ticket para a nova tabela this.prisma.ordemServico
     const ordensServico = await this.prisma.ordemServico.findMany({
       orderBy: { createdAt: 'desc' },
+      // Traz o log auditado ordenado do mais recente ao mais antigo
+      include: {
+        historico: {
+          orderBy: { timestamp: 'desc' },
+        },
+      },
     });
 
-    // Utiliza o método atualizado do nosso OrdemServicoMapper
     return OrdemServicoMapper.toListEntityFromListPrisma(ordensServico);
   }
 
   async findOrdemServicoById(id: string): Promise<OrdemServicoEntity | null> {
-    // Implementação real da query no banco de dados para o Update funcionar
     const ordemServico = await this.prisma.ordemServico.findUnique({
       where: { id },
+      include: {
+        historico: {
+          orderBy: { timestamp: 'desc' },
+        },
+      },
     });
 
     if (!ordemServico) {
