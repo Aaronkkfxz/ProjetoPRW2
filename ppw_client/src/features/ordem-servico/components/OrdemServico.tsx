@@ -5,6 +5,7 @@ import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { ColumnDef, flexRender, getCoreRowModel, getFilteredRowModel, useReactTable } from '@tanstack/react-table';
 import { useMemo, useState } from 'react';
+import * as Sentry from '@sentry/nextjs';
 
 import { updateOrdemServicoAction } from '../api/ordem-servico.action';
 import { OrdemServico } from '../type/ordem-servico.type';
@@ -20,22 +21,35 @@ export interface OrdemServicoProps {
 export default function OrdensServicoPage({ ordensServico }: OrdemServicoProps) {
   const [globalFilter, setGlobalFilter] = useState('');
   const [isFormOpen, setIsFormOpen] = useState(false);
-
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [osSelecionada, setOsSelecionada] = useState<OrdemServico | null>(null);
 
-  const handleOpenCreate = () => {
-    setIsFormOpen(true);
-  };
+  // --- INÍCIO: ESTADOS PARA O TESTE DO GLITCHTIP ---
+  const [forceError, setForceError] = useState(false);
 
+  // 1. Disparador de Renderização (Capturado pelo error.tsx)
+  if (forceError) {
+    throw new Error('Falha intencional na interface para teste do GlitchTip (Client-Side)');
+  }
+
+  // 2. Disparador Assíncrono (Capturado explicitamente pelo Sentry)
+  const simularQuedaBanco = async () => {
+    try {
+      throw new Error('Falha intencional de conexão (Teste GlitchTip Assíncrono)');
+    } catch (err) {
+      Sentry.captureException(err);
+      alert('Erro assíncrono capturado e enviado ao GlitchTip!');
+      throw err;
+    }
+  };
+  // --- FIM: ESTADOS PARA O TESTE DO GLITCHTIP ---
+
+  const handleOpenCreate = () => setIsFormOpen(true);
   const handleOpenUpdate = (os: OrdemServico) => {
     setOsSelecionada(os);
     setIsEditOpen(true);
   };
-
-  const handleOpenDelete = (id?: string) => {
-    console.log('Deletar OS:', id);
-  };
+  const handleOpenDelete = (id?: string) => console.log('Deletar OS:', id);
 
   const columns = useMemo<ColumnDef<OrdemServico>[]>(
     () => getOrdemServicoColumns({ onEdit: handleOpenUpdate, onDelete: handleOpenDelete }),
@@ -49,9 +63,7 @@ export default function OrdensServicoPage({ ordensServico }: OrdemServicoProps) 
     onGlobalFilterChange: setGlobalFilter,
     getCoreRowModel: getCoreRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
-    initialState: {
-      pagination: { pageSize: 5 },
-    },
+    initialState: { pagination: { pageSize: 5 } },
   });
 
   return (
@@ -132,13 +144,38 @@ export default function OrdensServicoPage({ ordensServico }: OrdemServicoProps) 
                   alert('FALHA NA TRANSIÇÃO: ' + res.message);
                 }
               }}
-              onDelete={(id) => {
-                console.log('Deletar OS:', id);
-              }}
+              onDelete={(id) => console.log('Deletar OS:', id)}
             />
           )}
         </DialogContent>
       </Dialog>
+
+      {/* --- INÍCIO: PAINEL DE TESTES DO GLITCHTIP --- */}
+      <div
+        className="mt-12 p-4 border rounded-xl shadow-lg"
+        style={{ borderColor: '#ff4444', backgroundColor: '#2a1111' }}
+      >
+        <h3 className="text-lg font-bold mb-4" style={{ color: '#ff4444' }}>
+          Painel de Testes - GlitchTip (Atividade 4)
+        </h3>
+        <div className="flex flex-wrap gap-4">
+          <Button
+            onClick={() => setForceError(true)}
+            style={{ backgroundColor: '#ff4444', color: 'white' }}
+            className="hover:opacity-90 font-bold"
+          >
+            1. Forçar Erro Client-Side
+          </Button>
+          <Button
+            onClick={simularQuedaBanco}
+            style={{ backgroundColor: '#ff8800', color: 'white' }}
+            className="hover:opacity-90 font-bold"
+          >
+            2. Forçar Erro Assíncrono
+          </Button>
+        </div>
+      </div>
+      {/* --- FIM: PAINEL DE TESTES DO GLITCHTIP --- */}
     </div>
   );
 }

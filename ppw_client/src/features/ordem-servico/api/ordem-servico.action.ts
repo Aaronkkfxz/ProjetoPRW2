@@ -44,7 +44,7 @@ export async function createOrdemServico(
 
 // 2. CORREÇÃO DO MODAL: A URL da requisição agora recebe o ID corretamente
 export async function updateOrdemServicoAction(id: string, updateData: any) {
-  const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+  const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
   try {
     const response = await fetch(`${API_URL}/ordem-servico/${id}`, {
       method: 'PATCH',
@@ -65,7 +65,7 @@ export async function updateOrdemServicoAction(id: string, updateData: any) {
 }
 
 export async function faturarOrdemServicoAction(osId: string, pecaId: string, quantidadeUsada: number) {
-  const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+  const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
   try {
     const response = await fetch(`${API_URL}/ordem-servico/${osId}/faturar`, {
       method: 'POST',

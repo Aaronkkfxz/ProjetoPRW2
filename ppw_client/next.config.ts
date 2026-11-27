@@ -6,6 +6,6 @@ const nextConfig = {
 
 export default withSentryConfig(nextConfig, {
   silent: true,
-  org: 'sua-organizacao', // O nome que você deu lá no GlitchTip
+  org: 'Oficina-projeto', // O nome que você deu lá no GlitchTip
   project: 'ppw_client',
 });

@@ -1,7 +1,7 @@
 import { OrdemServico } from '../type/ordem-servico.type';
 
 // Mantém a porta 8000 que estava a usar na imagem, ou pega da variável de ambiente
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 export async function fetchOrdensServico(): Promise<OrdemServico[]> {
   try {

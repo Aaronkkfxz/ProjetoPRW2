@@ -1,4 +1,3 @@
-import { VersioningType } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app/app.module';
 
@@ -12,6 +11,6 @@ async function bootstrap() {
     credentials: false,
   });
 
-  await app.listen(process.env.PORT ?? 8000);
+  await app.listen(process.env.PORT ?? 3001);
 }
 bootstrap();

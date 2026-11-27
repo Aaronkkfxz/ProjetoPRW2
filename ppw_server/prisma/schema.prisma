@@ -1,18 +1,21 @@
 generator client {
   provider = "prisma-client-js"
+  previewFeatures = ["multiSchema"]
 }
 
 datasource db {
   provider = "postgresql"
+  schemas  = ["bi304128x"]
 }
 
 enum Prioridade {
   BAIXA
   MEDIA
   ALTA
+
+  @@schema("bi304128x")
 }
 
-// Atualizamos os status para o fluxo da oficina
 enum Status {
   ABERTURA_DIAGNOSTICO
   AGUARDANDO_APROVACAO
@@ -20,6 +23,8 @@ enum Status {
   EXECUCAO_TRABALHO
   CONCLUIDO
   ENTREGUE
+
+  @@schema("bi304128x")
 }
 
 model OrdemServico {
@@ -37,26 +42,27 @@ model OrdemServico {
   updatedAt           DateTime?  @updatedAt @map("updated_at")
   deletedAt           DateTime?  @map("deleted_at")
 
-  // Relação com a trilha de auditoria
   historico           HistoricoOS[]
 
   @@map("ordens_servico")
+  @@schema("bi304128x")
 }
 
-// Tabela obrigatória para a avaliação (Rastreabilidade e Trilha de Auditoria)
 model HistoricoOS {
   id              String       @id @default(uuid())
   id_registro     String
   estado_anterior Status
   novo_estado     Status
-  autor_id        String       // ID do mecânico ou rececionista
+  autor_id        String
   justificativa   String?
   timestamp       DateTime     @default(now())
 
   ordemServico    OrdemServico @relation(fields: [id_registro], references: [id])
 
   @@map("historico_os")
+  @@schema("bi304128x")
 }
+
 model PecaEstoque {
   id         String   @id @default(uuid())
   nome       String
@@ -64,4 +70,5 @@ model PecaEstoque {
   preco      Float
 
   @@map("pecas_estoque")
+  @@schema("bi304128x")
 }
