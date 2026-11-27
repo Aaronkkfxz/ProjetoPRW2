@@ -1,0 +1,53 @@
+services:
+  postgres:
+    image: postgres:15
+    environment:
+      POSTGRES_USER: glitchtip
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: glitchtip
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U glitchtip"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    volumes:
+      - pg-data:/var/lib/postgresql/data
+    ports:
+      - "5433:5432"
+    restart: unless-stopped
+
+  redis:
+    image: redis:7
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+
+  glitchtip:
+    image: glitchtip/glitchtip:v4.0
+    depends_on:
+      - postgres
+      - redis
+    environment:
+      DATABASE_URL: postgres://glitchtip:password@postgres:5432/glitchtip
+      REDIS_URL: redis://redis:6379
+      SECRET_KEY: change_me_to_a_random_string_of_characters
+      GLITCHTIP_DOMAIN_URL: http://localhost:8000
+    ports:
+      - "8000:8000"
+    restart: unless-stopped
+    command: /bin/sh -c "./manage.py migrate && ./manage.py runserver 0.0.0.0:8000"
+
+  worker:
+    image: glitchtip/glitchtip:v4.0
+    depends_on:
+      - postgres
+      - redis
+    environment:
+      DATABASE_URL: postgres://glitchtip:password@postgres:5432/glitchtip
+      REDIS_URL: redis://redis:6379
+      SECRET_KEY: change_me_to_a_random_string_of_characters
+      PORT: 8000
+    command: celery -A glitchtip worker -l info
+
+volumes:
+  pg-data:

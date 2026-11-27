@@ -1,71 +1,88 @@
-Este documento regista as consultas aos agentes de Inteligência Artificial durante o desenvolvimento e refatoração da arquitetura do projeto. A IA foi utilizada como apoio para modelagem de banco de dados, design patterns, tratamento de infraestrutura de rede (VPN) e transações ACID.
+Registro de uso de inteligência artificial no desenvolvimento do projeto
+Durante o desenvolvimento do projeto, utilizei uma ferramenta de inteligência artificial como apoio para investigar dúvidas, entender mensagens de erro e comparar possíveis soluções. Nem todas as sugestões funcionaram diretamente no projeto. Em alguns casos, foi necessário conferir a estrutura existente, testar alternativas e adaptar o código. As perguntas deste registro estão resumidas para facilitar a leitura; as respostas e intervenções descrevem o que foi observado durante o desenvolvimento.
+PARTE 1 — Arquitetura, máquina de estados e transações
+Nesta etapa, os desafios estiveram relacionados à organização do código, à estrutura do banco de dados e ao controle das operações realizadas pelas ordens de serviço.
+Desafio 1 — Versionamento e proteção de credenciais
+Desafio: Configurar o Git para ignorar arquivos pesados e proteger informações sensíveis, sem impedir que outra pessoa consiga preparar e executar o projeto.
 
-### Desafio 1: Estratégia de Versionamento e Segurança de Credenciais
+Pergunta feita à IA (resumo): Como organizar o .gitignore e disponibilizar um exemplo de configuração para que o projeto possa ser executado sem expor as credenciais reais?
 
-**1. O Desafio:** Configurar o repositório Git local e remoto garantindo que credenciais sensíveis (conexão à VPN/banco da faculdade) e diretórios pesados não fossem expostos publicamente, sem inviabilizar a avaliação.
-**2. O Prompt Utilizado:** *"Como estruturar o versionamento de um projeto acadêmico no Git através do .gitignore, garantindo a segurança de credenciais de banco de dados e arquivos pesados, permitindo ao avaliador testar a aplicação?"*
-**3. A Resposta Bruta da IA:** A IA forneceu um modelo padrão de `.gitignore` para bloquear as pastas `node_modules` e o ficheiro `.env`, sugerindo enviar o `.env` real isoladamente ou usar um `.env.example`.
-**4. A Crítica e Refatoração do Aluno:** A recomendação do `.env.example` foi adotada, mas a IA não previu que o Git já havia rastreado arquivos pesados (como o `node.exe` de 88MB) antes da criação da regra. Tive que intervir manualmente executando `git rm -r --cached nodejs/` para limpar o índice local e garantir commits atômicos e leves.
+Síntese da resposta: A IA sugeriu ignorar diretórios como node_modules e o arquivo .env. Também recomendou criar um .env.example com os nomes das variáveis necessárias, mas sem os valores confidenciais.
 
-### Desafio 2: Refatoração do Domínio (Tickets para Ordem de Serviço)
+Análise e intervenção: A sugestão do .env.example foi aproveitada. Durante os testes, percebi que incluir uma regra no .gitignore não remove arquivos que já estavam sendo rastreados pelo Git. Por isso, usei o comando git rm -r --cached nodejs/ para retirar a pasta do índice do repositório, mantendo os arquivos na máquina local.
+Desafio 2 — Mudança do domínio de Ticket para Ordem de Serviço
+Desafio: Adaptar a estrutura do projeto para trabalhar com o domínio de Ordem de Serviço e reconstruir a estrutura do banco após a perda de tabelas no ambiente utilizado.
 
-**1. O Desafio:** Migrar toda a base estrutural do projeto do domínio genérico de "Ticket" para "Ordem de Serviço", mantendo a integridade do banco de dados após a perda de tabelas do servidor.
-**2. O Prompt Utilizado:** *"Qual a abordagem correta para recriar o esquema do banco de dados e manter a integridade estrutural após a perda de dados, migrando simultaneamente o domínio, DTOs e Mappers de 'Ticket' para 'Ordem de Serviço'?"*
-**3. A Resposta Bruta da IA:** A IA propôs comandos SQL manuais para reconstruir as tabelas via DBeaver e instruiu a renomeação de arquivos físicos e classes.
-**4. A Crítica e Refatoração do Aluno:** A execução de SQL manual geraria falhas de permissão no schema da faculdade. Corrigi a modelagem abandonando o DBeaver e delegando a reconstrução diretamente ao Prisma ORM (`npx prisma db push`), o que garantiu a integridade referencial automática e sincronizou os tipos de forma segura.
+Pergunta feita à IA (resumo): Qual seria uma forma segura de atualizar o modelo do banco e ajustar entidades, DTOs e mappers durante a mudança de Ticket para Ordem de Serviço?
 
-### Desafio 3: Modelagem da Máquina de Estados Finita (FSM)
+Síntese da resposta: A IA sugeriu recriar as tabelas por meio de comandos SQL e renomear os arquivos e as classes relacionadas ao domínio.
 
-**1. O Desafio:** Proibir alterações arbitrárias de status, implementando um ciclo de vida restrito (FSM) para os veículos da oficina (ex: proibir avanço sem diagnóstico).
-**2. O Prompt Utilizado:** *"Como modelar uma Máquina de Estados Finita e aplicar Transições Restritas (Transition Guards) no fluxo de uma Ordem de Serviço?"*
-**3. A Resposta Bruta da IA:** Explicou o padrão de projeto *State* (orientação a objetos) com múltiplas classes separadas para cada estado do veículo.
-**4. A Crítica e Refatoração do Aluno:** O *State Pattern* clássico geraria sobrecarga excessiva na arquitetura atual. Refatorei a solução mapeando os estados em *Enums* rígidos (`ABERTURA_DIAGNOSTICO`, `EXECUCAO_TRABALHO`, `CONCLUIDO`) e apliquei a "Transition Guard" no front-end, interceptando os saltos de etapa nos botões de ação da interface.
+Análise e intervenção: Como o ambiente acadêmico tinha restrições de permissão para executar determinadas operações diretamente no schema, optei por atualizar o modelo no Prisma e utilizar npx prisma db push para sincronizar a estrutura definida no schema.prisma com o banco. Depois, conferi as relações e os nomes utilizados pelas entidades para evitar divergências.
+Desafio 3 — Controle dos estados da Ordem de Serviço
+Desafio: Impedir que uma Ordem de Serviço avance ou retorne para qualquer status sem respeitar as etapas previstas no fluxo.
 
-### Desafio 4: Conflitos de Tipagem e Nomenclatura de DTOs
+Pergunta feita à IA (resumo): Como definir quais mudanças de status são permitidas e impedir que a Ordem de Serviço passe diretamente para uma etapa inválida?
 
-**1. O Desafio:** Resolver erros críticos de compilação (ex: `Cannot find module` e TS2307) e inconsistência de mapeamento após a mudança de domínio e renomeação de ficheiros físicos.
-**2. O Prompt Utilizado:** *"Como refatorar os Value Objects e os Mappers do Prisma para garantir a tipagem estrita e corrigir os erros de 'Cannot find module' nas transferências de DTO?"*
-**3. A Resposta Bruta da IA:** A IA enviou o código atualizado dos Mappers, mas presumiu o padrão da documentação do Prisma (`updatedAt`), ignorando a implementação da entidade base legada.
-**4. A Crítica e Refatoração do Aluno:** O código gerado pela IA quebrou o projeto devido à divergência entre `updatedAt` (IA) e `updateAt` (Minha base). Identifiquei o erro de tipagem no TypeScript, e ajustei manualmente a assinatura no `OrdemServicoMapper` e no DTO para respeitar a estrutura original (`updateAt: entity.props.updateAt ?? null`).
+Síntese da resposta: A IA apresentou o padrão State Pattern, com a criação de classes específicas para representar cada estado.
 
-### Desafio 5: Reestruturação da Injeção de Dependências (NestJS)
+Análise e intervenção: Para o tamanho e a estrutura do projeto, considerei essa abordagem mais complexa do que o necessário. Utilizei enums para representar os estados e implementei verificações na interface antes de permitir as ações disponíveis. Essa validação melhora o fluxo de uso, mas não substitui a validação no servidor: a API também precisa conferir se a transição é permitida, evitando que a regra dependa apenas dos botões da interface.
+Desafio 4 — Tipagem e nomenclatura dos DTOs
+Desafio: Corrigir erros de compilação e de importação que apareceram depois da mudança do domínio e da renomeação de arquivos.
 
-**1. O Desafio:** Reestabelecer o módulo principal do NestJS para resolver falhas de injeção de dependência (`Property does not exist`) na inicialização do servidor.
-**2. O Prompt Utilizado:** *"Como reconfigurar o módulo principal do NestJS após renomear casos de uso, repositórios e controladores?"*
-**3. A Resposta Bruta da IA:** A IA gerou o código do arquivo `OrdemServicoModule` vinculando os novos providers, tokens e controllers perfeitamente.
-**4. A Crítica e Refatoração do Aluno:** A IA ignorou que os arquivos físicos no sistema (ex: `ticket.prisma.write.repository.ts`) ainda mantinham nomes antigos, o que sustentava os alertas vermelhos. Renomeei manualmente os paths dos arquivos no painel Explorer do VS Code e vinculei o novo módulo no `app.module.ts` no lugar do antigo.
+Pergunta feita à IA (resumo): Como ajustar os Value Objects e os mappers para manter os tipos compatíveis com as entidades existentes e corrigir os erros de importação?
 
-### Desafio 6: Validação de Dados (Zod) e UI Actions
+Síntese da resposta: A IA sugeriu alterações nos mappers, mas utilizou o nome updatedAt, seguindo um padrão comum em projetos Prisma, sem considerar a nomenclatura que já existia na entidade base do projeto.
 
-**1. O Desafio:** Integrar a FSM com o formulário de abertura de O.S. no Next.js, garantindo validação estrita (Server-Side) e *fallback* visual de mensagens de erro.
-**2. O Prompt Utilizado:** *"Como adaptar o formulário de criação (Dialog) e o schema do Zod para respeitar a nova Máquina de Estados e acionar as Server Actions corretamente?"*
-**3. A Resposta Bruta da IA:** Gerou o `ordem-servico.schema.ts` restringindo o campo de `status` a um Enum validado e orientou o uso de `useActionState` no modal.
-**4. A Crítica e Refatoração do Aluno:** A validação sugerida era sólida, mas na interface o envio da Action perdia a referência dos inputs se enviada cruamente. Apliquei um wrapper via `React Hooks` (`react-hook-form` com `zodResolver`) antes do `formAction(ticket as any)` no `onSubmit`, garantindo que apenas dados limpos acionassem a API, bloqueando envios nulos.
+Análise e intervenção: A alteração sugerida gerou incompatibilidade com a estrutura existente. Revisei o mapper e mantive o nome utilizado pela entidade, updateAt, ajustando o trecho para updateAt: entity.props.updateAt ?? null. Assim, o mapper passou a respeitar a tipagem que já estava definida no projeto.
+Desafio 5 — Registro do histórico de alterações
+Desafio: Registrar as mudanças de estado da Ordem de Serviço com informações de autoria e justificativa, mantendo o histórico sem sobrescrever registros anteriores.
 
-### Desafio 7: Trilha de Auditoria (Audit Log) e Transações ACID
+Pergunta feita à IA (resumo): Como atualizar a Ordem de Serviço e registrar o histórico da mudança de forma que as duas operações não fiquem inconsistentes?
 
-**1. O Desafio:** Garantir que nenhuma alteração de estado sobrescreva dados sem gerar um histórico imutável (Append-Only) identificando autor, justificativa e timestamp.
-**2. O Prompt Utilizado:** *"Como implementar uma trilha de auditoria vinculada à mudança de estados utilizando transações ACID no Prisma, garantindo o 'rollback' em caso de falhas?"*
-**3. A Resposta Bruta da IA:** A IA recomendou envolver as operações num bloco genérico, realizando primeiro um `update` da O.S. e depois um `create` isolado na tabela de histórico.
-**4. A Crítica e Refatoração do Aluno:** Executar duas queries separadas no código Node.js, mesmo em transação, abria brechas de segurança e latência. Refatorei a implementação utilizando o recurso de **Criação Aninhada** do Prisma (`historico: { create: {} }`). Isso acoplou as tabelas nativamente no banco (PostgreSQL), blindando a trilha de auditoria em um único comando SQL.
+Síntese da resposta: A primeira orientação tratava a atualização da Ordem de Serviço e a criação do histórico como operações separadas, sem detalhar como garantir que ambas fossem confirmadas ou desfeitas em conjunto.
 
-### Desafio 8: Infraestrutura de Rede, VPN e Comunicação HTTP
+Análise e intervenção: Para manter as operações relacionadas no mesmo fluxo, utilizei uma escrita aninhada do Prisma (historico: { create: {} }). Esse recurso permite executar a alteração do registro principal e a criação do histórico como uma operação transacional, evitando que uma parte seja gravada sem a outra.
+Desafio 6 — Integração entre a tabela e o modal de edição
+Desafio: Fazer com que o botão de edição da tabela principal abrisse o painel correspondente à Ordem de Serviço selecionada.
 
-**1. O Desafio:** Solucionar falhas de comunicação severas (`ECONNREFUSED` / `fetch failed`) entre o Frontend Next.js e o Backend NestJS.
-**2. O Prompt Utilizado:** *"Por que a Server Action do Next.js está retornando ECONNREFUSED ao tentar fazer o fetch para a API do NestJS na porta 8000?"*
-**3. A Resposta Bruta da IA:** A IA presumiu que havia erros na configuração de payload (`JSON.stringify`) da rota de faturamento, ou falhas na tipagem dos status do Prisma bloqueando a resposta do backend.
-**4. A Crítica e Refatoração do Aluno:** O diagnóstico da IA estava equivocado. A requisição HTTP sequer alcançava a rota porque o servidor NestJS estava "crashing" silenciosamente devido à ausência das credenciais do banco na VPN. A falha era de infraestrutura (o arquivo `.env` não versionado no PC local). Copiei o `.env` correto da faculdade e executei os serviços em terminais separados para garantir a conectividade real.
+Pergunta feita à IA (resumo): Por que o botão de edição não estava abrindo o painel e como ligar o componente da Ordem de Serviço à tabela principal?
 
-### Desafio 9: Acoplamento do Gatilho da Transação (FSM e UI)
+Síntese da resposta: A IA concentrou a análise no componente filho, verificando sua estrutura e tipagem, mas não identificou de início o problema no componente responsável pela tabela.
 
-**1. O Desafio:** Disparar o painel visual da Máquina de Estados (Card) a partir da tabela principal do Next.js para poder realizar a transição atômica de "Boss Final" via botão.
-**2. O Prompt Utilizado:** *"O botão de editar não abre o painel. Como integrar o componente de Cartão da OS na tabela principal para acionar o faturamento atômico?"*
-**3. A Resposta Bruta da IA:** A IA analisou exaustivamente o código do componente filho (`OrdemServicoCard`), garantindo que a tipagem e os hooks estavam corretos, demorando a observar a arquitetura pai.
-**4. A Crítica e Refatoração do Aluno:** A IA ignorou inicialmente que a função `handleOpenUpdate` no arquivo pai (`OrdemServico.tsx`) havia ficado vazia na refatoração. Tive que alterar a arquitetura do front-end inserindo o Modal (`Dialog`) nativamente no root da tabela e forçar a injeção do estado (`setOsSelecionada`) ao clicar no lápis para viabilizar a injeção do Card.
+Análise e intervenção: Ao revisar o componente pai (OrdensServicoPage), encontrei a função handleOpenUpdate declarada, mas sem implementação. Ajustei o fluxo para selecionar a Ordem de Serviço clicada por meio de setOsSelecionada e abrir o componente Dialog utilizado como modal de edição.
+Desafio 7 — Atualização do estoque e concorrência
+Desafio: Baixar as peças utilizadas em uma Ordem de Serviço e registrar a operação sem que requisições simultâneas causem divergências no estoque.
 
-### Desafio 10: Regra de Alta Complexidade (Baixa Atômica de Peças em Concorrência)
+Pergunta feita à IA (resumo): Como atualizar o estoque e concluir a Ordem de Serviço sem depender de uma leitura que pode ficar desatualizada quando duas requisições acontecem ao mesmo tempo?
 
-**1. O Desafio:** Alocar peças do estoque e faturar a OS simultaneamente, lidando com concorrência para evitar que dois mecânicos esgotem a última peça disponível ao mesmo tempo (Race Conditions).
-**2. O Prompt Utilizado:** *"Como garantir consistência ao baixar estoque e faturar a OS em concorrência simultânea?"*
-**3. A Resposta Bruta da IA:** A IA sugeriu um fluxo de leitura e escrita sequencial na API: `findUnique` para checar o saldo de peças na memória do Node.js, seguido de um `update` manual.
-**4. A Crítica e Refatoração do Aluno:** A abordagem sequencial permitiria leitura "suja" em concorrência, negativando o estoque. Descartei essa sugestão e implementei uma **Transação ACID** do Prisma usando a operação de baixa matemática direta (`decrement: quantidadeUsada`). Isso força o PostgreSQL a aplicar um *Row-Level Locking*, fazendo o cálculo atômico diretamente no motor do banco. Se o saldo resultante ficar negativo, o banco reverte toda a operação (Rollback), blindando a lógica .
+Síntese da resposta: A IA sugeriu consultar o saldo com findUnique e, em seguida, executar a atualização. Essa sequência poderia utilizar um valor que já tivesse sido alterado por outra requisição.
+
+Análise e intervenção: Passei a utilizar uma transação do Prisma e a operação decrement para realizar a subtração diretamente no banco, em vez de calcular o novo saldo apenas com um valor previamente lido pela aplicação. Durante a revisão, identifiquei um cuidado importante: decrement, sozinho, não impede que o estoque fique negativo. Para garantir esse limite, a atualização também precisa verificar a disponibilidade no próprio banco ou contar com uma restrição adequada, além do tratamento da transação.
+PARTE 2 — Observabilidade, telemetria e Docker
+Nesta etapa, os problemas estiveram relacionados à conexão com o banco, ao processamento de eventos no ambiente Docker e ao envio de erros para a ferramenta de monitoramento.
+Desafio 8 — Conexão com o schema no Prisma
+Desafio: Ao configurar a conexão com o banco, as consultas tentavam utilizar o schema public e retornavam o erro 42501: permission denied for schema public, embora o projeto precisasse acessar o schema acadêmico bi304128x.
+
+Pergunta feita à IA (resumo): Como configurar a conexão do Prisma com o schema acadêmico correto quando as consultas estão sendo direcionadas para o schema public?
+
+Síntese da resposta: A IA sugeriu utilizar um Pool da biblioteca pg com o adaptador @prisma/adapter-pg e executar SET search_path TO bi304128x no evento de conexão do Pool.
+
+Análise e intervenção: A abordagem com o evento connect não resolveu o problema. Como o callback assíncrono não garantia que o comando SET search_path terminasse antes das consultas, essa solução poderia gerar uma condição de corrida. Durante os testes, retirei as adaptações extras de conexão e simplifiquei a configuração; depois disso, o ambiente voltou a conectar ao schema esperado.
+
+A explicação original também dizia que a remoção dos arquivos de configuração teria reativado o motor Rust do Prisma. Essa conclusão não foi mantida: no Prisma ORM 7, o cliente padrão utiliza o compilador em TypeScript, sem os engines Rust, e a conexão direta exige um driver adapter. Por isso, o resultado observado no projeto não deve ser apresentado como uma regra geral para o Prisma 7. Antes da entrega, é importante conferir as versões de prisma, @prisma/client e @prisma/adapter-pg instaladas no projeto. A revisão desse ponto foi feita com base na documentação oficial do Prisma ORM 7 e no respectivo guia de atualização.
+Desafio 9 — Processamento de eventos no GlitchTip
+Desafio: O frontend enviava os eventos de erro e recebia o status HTTP 200, mas as ocorrências não apareciam no painel local do GlitchTip.
+
+Pergunta feita à IA (resumo): O envio dos eventos retorna sucesso, mas o painel não registra os erros. Como verificar se o serviço responsável por processar a fila está funcionando?
+
+Síntese da resposta: A IA identificou que o container responsável pelo worker estava encerrando logo após iniciar e sugeriu revisar o comando configurado no docker-compose.yml.
+
+Análise e intervenção: O primeiro comando indicado, ./bin/run-celery-with-beat.sh, não existia na imagem utilizada. Conferi o comando disponível no ambiente e alterei a inicialização do serviço para celery -A glitchtip worker -l info. Depois do ajuste, o container permaneceu em execução e os eventos que estavam na fila começaram a aparecer no painel.
+Desafio 10 — Captura de erros em funções assíncronas no Next.js
+Desafio: O arquivo error.tsx capturava falhas durante a renderização, mas não registrava automaticamente erros lançados dentro de funções assíncronas acionadas por eventos da interface, como o clique de um botão.
+
+Pergunta feita à IA (resumo): Por que um erro lançado dentro de uma função async chamada por um botão não é tratado pelo Error Boundary e não aparece no GlitchTip?
+
+Síntese da resposta: A primeira orientação da IA direcionou a investigação para possíveis problemas de configuração do SDK e para os arquivos de inicialização do monitoramento.
+
+Análise e intervenção: Depois de conferir a inicialização do SDK, identifiquei que o problema estava no local em que a exceção acontecia. Erros originados em manipuladores de eventos não são encaminhados automaticamente para os Error Boundaries de renderização. Ajustei a função assíncrona para tratar a falha com try/catch e enviar a exceção explicitamente por meio de Sentry.captureException(err), permitindo que o erro também fosse registrado no GlitchTip.
